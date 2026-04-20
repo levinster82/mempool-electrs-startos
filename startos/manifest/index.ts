@@ -2,13 +2,13 @@ import { setupManifest } from '@start9labs/start-sdk'
 import { bitcoindDescription, long, short } from './i18n'
 
 export const manifest = setupManifest({
-  id: 'electrs',
-  title: 'Electrs',
+  id: 'mempool-electrs',
+  title: 'Mempool Electrs',
   license: 'MIT',
-  packageRepo: 'https://github.com/Start9Labs/electrs-startos',
-  upstreamRepo: 'https://github.com/romanz/electrs/',
-  marketingUrl: 'https://github.com/romanz/electrs/',
-  docsUrls: ['https://github.com/romanz/electrs/blob/master/README.md'],
+  packageRepo: 'https://github.com/Start9-Community/mempool-electrs-startos',
+  upstreamRepo: 'https://github.com/mempool/electrs',
+  marketingUrl: 'https://github.com/mempool/electrs',
+  docsUrls: ['https://github.com/mempool/electrs/blob/master/README.md'],
   donationUrl: null,
   description: { short, long },
   volumes: ['main'],

@@ -11,10 +11,6 @@ const dict = {
   'Electrs requires an archival bitcoin node.': 7,
   'Log Level': 8,
   'Select the level of log verbosity. Less is usually better.': 9,
-  'Index Batch Size': 10,
-  'Maximum number of blocks to request from bitcoind per batch.': 11,
-  'blocks': 12,
-  'Index Lookup Limit': 13,
   "Number of transactions to lookup before returning an error, to prevent 'too popular' addresses from causing the RPC server to time out. Enter '0' for no limit.": 14,
   'transactions': 15,
   'Configure': 16,
@@ -24,6 +20,9 @@ const dict = {
   'Info': 20,
   'Debug': 21,
   'Trace': 22,
+  'Electrum Transaction Limit': 23,
+  'REST API': 24,
+  'HTTP REST API for blockchain data queries': 25,
 } as const
 
 export type I18nKey = keyof typeof dict

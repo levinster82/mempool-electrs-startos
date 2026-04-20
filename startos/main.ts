@@ -1,9 +1,10 @@
 import { FileHelper } from '@start9labs/start-sdk'
 import { manifest } from 'bitcoind-startos/startos/manifest'
 import { readFile } from 'fs/promises'
+import { configFile } from './fileModels/config.json'
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { port } from './utils'
+import { logLevelToVerbosityFlags, port } from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
   /**
@@ -31,10 +32,26 @@ export const main = sdk.setupMain(async ({ effects }) => {
     'electrs',
   )
 
-  // Restart if Bitcoin .cookie changes
+  // Restart if Bitcoin .cookie or config changes
   await FileHelper.string(`${electrsContainer.rootfs}/mnt/bitcoind/.cookie`)
     .read()
     .const(effects)
+
+  const config = await configFile.read().const(effects)
+  const logLevel = config?.log_level ?? 'INFO'
+  const electrumTxsLimit = config?.electrum_txs_limit ?? 500
+
+  const command: [string, ...string[]] = [
+    'electrs',
+    '--network', 'mainnet',
+    '--daemon-dir', '/mnt/bitcoind',
+    '--daemon-rpc-addr', 'bitcoind.startos:8332',
+    '--electrum-rpc-addr', `0.0.0.0:${port}`,
+    '--http-addr', '0.0.0.0:3000',
+    '--db-dir', '/data/db',
+    '--electrum-txs-limit', String(electrumTxsLimit),
+    ...logLevelToVerbosityFlags(logLevel),
+  ]
 
   /**
    * ======================== Daemons ========================
@@ -42,7 +59,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
   return sdk.Daemons.of(effects)
     .addDaemon('electrs', {
       subcontainer: electrsContainer,
-      exec: { command: ['electrs'] },
+      exec: { command },
       ready: {
         display: i18n('Electrum Server'),
         fn: () =>
@@ -128,7 +145,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
             [
               'sh',
               '-c',
-              'tail -100000 /data/db/bitcoin/LOG 2>/dev/null | grep -E "ManualCompaction|compaction_finished"',
+              'tail -100000 /data/db/mainnet/newindex/LOG 2>/dev/null | grep -E "ManualCompaction|compaction_finished"',
             ],
             {},
           )

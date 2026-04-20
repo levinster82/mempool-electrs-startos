@@ -14,7 +14,7 @@ COPY ./electrs .
 ENV ROCKSDB_INCLUDE_DIR=/usr/include
 ENV ROCKSDB_LIB_DIR=/usr/lib
 RUN rustup toolchain install stable
-RUN cargo +stable install --locked --path .
+RUN cargo +stable build --release --bin electrs
 
 FROM debian:trixie-slim AS final
 
@@ -31,7 +31,7 @@ ARG TARGETARCH
 RUN curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${TARGETARCH} \
     -o /usr/local/bin/yq && chmod +x /usr/local/bin/yq
 
-COPY --from=builder /usr/local/cargo/bin/electrs /bin/electrs
+COPY --from=builder /build/target/release/electrs /bin/electrs
 
 WORKDIR /data
 

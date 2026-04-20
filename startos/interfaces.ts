@@ -1,10 +1,10 @@
 import { i18n } from './i18n'
 import { sdk } from './sdk'
-import { port } from './utils'
+import { httpPort, port } from './utils'
 
 export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
-  const multihost = sdk.MultiHost.of(effects, 'electrum')
-  const mainMultiOrigin = await multihost.bindPort(port, {
+  const electrumMultihost = sdk.MultiHost.of(effects, 'electrum')
+  const electrumMultiOrigin = await electrumMultihost.bindPort(port, {
     protocol: null,
     addSsl: {
       preferredExternalPort: 50002,
@@ -14,7 +14,7 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     preferredExternalPort: port,
     secure: null,
   })
-  const main = sdk.createInterface(effects, {
+  const electrumInterface = sdk.createInterface(effects, {
     name: i18n('Main'),
     id: 'main',
     description: i18n('The main interface for accessing electrs'),
@@ -26,7 +26,30 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     query: {},
   })
 
-  const mainReceipt = await mainMultiOrigin.export([main])
+  const httpMultihost = sdk.MultiHost.of(effects, 'rest')
+  const httpMultiOrigin = await httpMultihost.bindPort(httpPort, {
+    protocol: 'http',
+    addSsl: {
+      preferredExternalPort: 443,
+      alpn: null,
+      addXForwardedHeaders: true,
+    },
+    preferredExternalPort: httpPort,
+  })
+  const httpInterface = sdk.createInterface(effects, {
+    name: i18n('REST API'),
+    id: 'rest',
+    description: i18n('HTTP REST API for blockchain data queries'),
+    type: 'api',
+    masked: false,
+    schemeOverride: null,
+    username: null,
+    path: '',
+    query: {},
+  })
 
-  return [mainReceipt]
+  const electrumReceipt = await electrumMultiOrigin.export([electrumInterface])
+  const httpReceipt = await httpMultiOrigin.export([httpInterface])
+
+  return [electrumReceipt, httpReceipt]
 })

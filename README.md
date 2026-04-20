@@ -2,15 +2,15 @@
   <img src="icon.svg" alt="Electrs Logo" width="21%">
 </p>
 
-# Electrs on StartOS
+# Mempool Electrs on StartOS
 
-> **Upstream docs:** <https://github.com/romanz/electrs/blob/master/README.md>
+> **Upstream docs:** <https://github.com/mempool/electrs/blob/master/README.md>
 >
 > Everything not listed in this document should behave the same as upstream
 > Electrs. If a feature, setting, or behavior is not mentioned here, the
 > upstream documentation is accurate and fully applicable.
 
-[Electrs](https://github.com/romanz/electrs) is an efficient Electrum Server implementation in Rust, optimized for personal use. It indexes the Bitcoin blockchain and serves Electrum protocol queries to wallets.
+[Mempool Electrs](https://github.com/mempool/electrs) is a blockchain index engine and HTTP API written in Rust, based on [romanz/electrs](https://github.com/romanz/electrs) and [Blockstream/electrs](https://github.com/Blockstream/electrs). Used as the backend for the [mempool block explorer](https://github.com/mempool/mempool) powering [mempool.space](https://mempool.space/).
 
 ---
 
