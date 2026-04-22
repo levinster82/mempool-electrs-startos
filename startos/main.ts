@@ -40,6 +40,9 @@ export const main = sdk.setupMain(async ({ effects }) => {
   const config = await configFile.read().const(effects)
   const logLevel = config?.log_level ?? 'INFO'
   const electrumTxsLimit = config?.electrum_txs_limit ?? 500
+  const utxosLimit = config?.utxos_limit ?? 500
+  const indexUnspendables = config?.index_unspendables ?? false
+  const addressSearch = config?.address_search ?? false
 
   const command: [string, ...string[]] = [
     'electrs',
@@ -50,7 +53,10 @@ export const main = sdk.setupMain(async ({ effects }) => {
     '--http-addr', '0.0.0.0:3000',
     '--db-dir', '/data/db',
     '--electrum-txs-limit', String(electrumTxsLimit),
+    '--utxos-limit', String(utxosLimit),
     ...logLevelToVerbosityFlags(logLevel),
+    ...(indexUnspendables ? ['--index-unspendables'] : []),
+    ...(addressSearch ? ['--address-search'] : []),
   ]
 
   /**

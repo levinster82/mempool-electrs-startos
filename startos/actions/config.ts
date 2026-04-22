@@ -26,6 +26,34 @@ export const inputSpec = InputSpec.of({
     placeholder: '500',
     units: i18n('transactions'),
   }),
+  utxos_limit: Value.number({
+    name: i18n('UTXO Limit'),
+    description: i18n(
+      "Maximum number of UTXOs to process per address. Lookups for addresses with more UTXOs will fail. Applies to both the Electrum and REST APIs. Enter '0' for no limit.",
+    ),
+    required: true,
+    default: 500,
+    integer: true,
+    min: 0,
+    placeholder: '500',
+    units: i18n('utxos'),
+  }),
+  index_unspendables: Value.toggle({
+    name: i18n('Index Unspendable Outputs'),
+    description: i18n(
+      'Index OP_RETURN and other provably unspendable outputs. Required for Ordinals, Counterparty, and other data-embedding protocols. Increases index size.',
+    ),
+    warning: i18n('Changing this setting requires a full reindex. Delete the db/ directory and restart the service to trigger a reindex.'),
+    default: false,
+  }),
+  address_search: Value.toggle({
+    name: i18n('Address Search'),
+    description: i18n(
+      'Enable prefix address search, allowing partial address lookups via the REST API.',
+    ),
+    warning: i18n('Changing this setting requires a full reindex. Delete the db/ directory and restart the service to trigger a reindex.'),
+    default: false,
+  }),
 })
 
 export const config = sdk.Action.withInput(

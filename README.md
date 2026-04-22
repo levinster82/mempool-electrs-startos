@@ -83,14 +83,15 @@
 | `db_dir` | Config/CLI | Fixed: `/data/db` |
 | `log_filters` | Config/CLI | Configure action: "Log Level" |
 | `electrum_txs_limit` | Config/CLI | Configure action: "Electrum Transaction Limit" |
+| `utxos_limit` | Config/CLI | Configure action: "UTXO Limit" |
+| `index_unspendables` | Config/CLI | Configure action: "Index Unspendable Outputs" |
+| `address_search` | Config/CLI | Configure action: "Address Search" |
 
 **Upstream options not exposed on StartOS:**
 
 | Flag | Upstream Default | Reason not exposed |
 |------|-----------------|-------------------|
 | `--lightmode` | off | Not yet implemented; reduces storage but omits some index data |
-| `--utxos-limit` | 500 | Not yet implemented; caps UTXOs per address for Electrum and REST API |
-| `--address-search` | off | Not yet implemented; enables prefix address search |
 | `--cors` | none | Not yet implemented; allows cross-origin requests to the REST API |
 | `--electrum-banner` | version string | Not yet implemented; custom welcome message for Electrum clients |
 | `--jsonrpc-import` | off | Not applicable; direct block file access is faster and the bitcoind volume is mounted |
@@ -138,7 +139,10 @@ SSL termination for both interfaces is handled by the StartOS platform (nginx). 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Log Level | INFO | Verbosity: ERROR, WARN, INFO, DEBUG, TRACE |
-| Electrum Transaction Limit | 500 | Max transactions to lookup before returning an error (0 = unlimited) |
+| Electrum Transaction Limit | 500 | Max transactions to lookup per address before returning an error (0 = unlimited) |
+| UTXO Limit | 500 | Max UTXOs to process per address for Electrum and REST APIs (0 = unlimited) |
+| Index Unspendable Outputs | off | Index OP_RETURN and provably unspendable outputs (required for Ordinals, Counterparty, etc.) |
+| Address Search | off | Enable prefix address search via the REST API |
 
 ---
 
@@ -259,6 +263,9 @@ fixed_config:
 startos_managed_config:
   - log_level
   - electrum_txs_limit
+  - utxos_limit
+  - index_unspendables
+  - address_search
 actions:
   - config (enabled, any)
 health_checks:

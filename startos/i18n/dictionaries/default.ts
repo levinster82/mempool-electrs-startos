@@ -23,6 +23,14 @@ const dict = {
   'Electrum Transaction Limit': 23,
   'REST API': 24,
   'HTTP REST API for blockchain data queries': 25,
+  'UTXO Limit': 26,
+  'Maximum number of UTXOs to process per address. Lookups for addresses with more UTXOs will fail. Applies to both the Electrum and REST APIs. Enter \'0\' for no limit.': 27,
+  'utxos': 28,
+  'Index Unspendable Outputs': 29,
+  'Index OP_RETURN and other provably unspendable outputs. Required for Ordinals, Counterparty, and other data-embedding protocols. Increases index size.': 30,
+  'Address Search': 31,
+  'Enable prefix address search, allowing partial address lookups via the REST API.': 32,
+  'Changing this setting requires a full reindex. Delete the db/ directory and restart the service to trigger a reindex.': 33,
 } as const
 
 export type I18nKey = keyof typeof dict
