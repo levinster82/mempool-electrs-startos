@@ -5,6 +5,7 @@
 # Mempool Electrs on StartOS
 
 > **Upstream docs:** <https://github.com/mempool/electrs/blob/master/README.md>
+> **Upstream version:** 3.3.0
 >
 > Everything not listed in this document should behave the same as upstream
 > Electrs. If a feature, setting, or behavior is not mentioned here, the
@@ -83,12 +84,22 @@
 | `log_filters` | Config/CLI | Configure action: "Log Level" |
 | `electrum_txs_limit` | Config/CLI | Configure action: "Electrum Transaction Limit" |
 
-**Configuration options NOT exposed on StartOS:**
+**Upstream options not exposed on StartOS:**
 
-- `skip_block_download_wait` — not exposed
-- `jsonrpc_timeout` — not exposed
-- `server_banner` — not exposed
-- `signet_magic` — not applicable (mainnet only)
+| Flag | Upstream Default | Reason not exposed |
+|------|-----------------|-------------------|
+| `--lightmode` | off | Not yet implemented; reduces storage but omits some index data |
+| `--utxos-limit` | 500 | Not yet implemented; caps UTXOs per address for Electrum and REST API |
+| `--address-search` | off | Not yet implemented; enables prefix address search |
+| `--cors` | none | Not yet implemented; allows cross-origin requests to the REST API |
+| `--electrum-banner` | version string | Not yet implemented; custom welcome message for Electrum clients |
+| `--jsonrpc-import` | off | Not applicable; direct block file access is faster and the bitcoind volume is mounted |
+| `--main-loop-delay` | 500ms | Advanced tuning; default is suitable for all users |
+| `--mempool-backlog-stats-ttl` | 10s | Advanced tuning; default is suitable for all users |
+| `--mempool-recent-txs-size` | 10 | Advanced tuning; default is suitable for all users |
+| `--rest-default-*` / `--rest-max-*` | various | Advanced REST API pagination tuning; defaults are suitable for all users |
+| `--precache-scripts` / `--precache-threads` | — | Niche pre-warming feature; not applicable for typical use |
+| `--index-unspendables` | off | Niche; indexes OP_RETURN and other provably unspendable outputs |
 
 ---
 
@@ -199,7 +210,7 @@ The sync check runs only after the `electrs` daemon is ready. It performs multip
 2. **Fixed Bitcoin connection** — must use the StartOS Bitcoin Core dependency; cannot connect to external Bitcoin nodes
 3. **Custom-built image** — built from source rather than using pre-built binaries
 4. **Index excluded from backups** — restoring from backup requires full re-indexing
-5. **Limited configuration** — some advanced options (server banner, timeouts) not exposed
+5. **Partial configuration exposure** — several upstream flags are available but not yet exposed in the StartOS UI; see the full list in [Configuration Management](#configuration-management)
 
 ---
 
@@ -226,6 +237,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development wo
 
 ```yaml
 package_id: mempool-electrs
+upstream_version: 3.3.0
 image: dockerBuild (custom)
 architectures: [x86_64, aarch64]
 volumes:
