@@ -48,11 +48,10 @@
 |--------|-------------|---------|
 | `main` | `/data` | Configuration and index database |
 | (bitcoind dependency) | `/mnt/bitcoind` | Read-only access to Bitcoin Core data for cookie auth |
-| (assets) | `/assets` | Scripts for health checks |
 
 **StartOS-specific files:**
 
-- `electrs.toml` — configuration file managed by StartOS
+- `config.json` — configuration file managed by StartOS (seeded with defaults on install)
 - `db/` — RocksDB index database (excluded from backups)
 
 ---
@@ -63,11 +62,11 @@
 |------|----------|---------|
 | Bitcoin connection | Manual configuration (RPC address, cookie path) | Auto-configured via dependency |
 | Configuration | CLI arguments or config file | Configure action in StartOS UI |
-| Initial sync | ~6.5 hours for full blockchain | Same (depends on hardware) |
+| Initial sync | Several hours for full blockchain | Same (depends on hardware) |
 
-**Key difference:** On StartOS, the Bitcoin Core connection is fully automatic — Electrs connects to `bitcoind.startos:8332` for RPC and `bitcoind.startos:8333` for P2P, using cookie authentication from the mounted dependency volume.
+**Key difference:** On StartOS, the Bitcoin Core connection is fully automatic — Electrs connects to `bitcoind.startos:8332` for RPC using cookie authentication from the mounted dependency volume.
 
-**First run:** Initial indexing takes several hours depending on your hardware. The service will show "loading" status until sync completes.
+**First run:** On install, `config.json` is seeded with defaults. Initial indexing takes several hours depending on your hardware. The service will show "loading" status until sync completes.
 
 ---
 
@@ -77,16 +76,15 @@
 |---------|-----------------|----------------|
 | `cookie_file` | Config/CLI | Fixed: `/mnt/bitcoind/.cookie` |
 | `daemon_rpc_addr` | Config/CLI | Fixed: `bitcoind.startos:8332` |
-| `daemon_p2p_addr` | Config/CLI | Fixed: `bitcoind.startos:8333` |
-| `network` | Config/CLI | Fixed: `bitcoin` |
+| `network` | Config/CLI | Fixed: `mainnet` |
 | `electrum_rpc_addr` | Config/CLI | Fixed: `0.0.0.0:50001` |
+| `http_addr` | Config/CLI | Fixed: `0.0.0.0:3000` |
+| `db_dir` | Config/CLI | Fixed: `/data/db` |
 | `log_filters` | Config/CLI | Configure action: "Log Level" |
-| `index_batch_size` | Config/CLI | Configure action: "Index Batch Size" |
-| `index_lookup_limit` | Config/CLI | Configure action: "Index Lookup Limit" |
+| `electrum_txs_limit` | Config/CLI | Configure action: "Electrum Transaction Limit" |
 
 **Configuration options NOT exposed on StartOS:**
 
-- `db_dir` — fixed to `/data/db`
 - `skip_block_download_wait` — not exposed
 - `jsonrpc_timeout` — not exposed
 - `server_banner` — not exposed
@@ -96,10 +94,10 @@
 
 ## Network Access and Interfaces
 
-| Interface | Port | Protocol | Purpose |
-|-----------|------|----------|---------|
-| Electrum | 50001 | TCP (Electrum protocol) | Wallet connections (unencrypted) |
-| Electrum SSL | 50002 | TCP+SSL | Wallet connections (encrypted) |
+| Interface | Internal Port | External Port | Protocol | Purpose |
+|-----------|--------------|---------------|----------|---------|
+| Electrum | 50001 | 50002 | TCP + SSL | Wallet connections (Electrum protocol) |
+| REST API | 3000 | 443 | HTTP + SSL | Blockchain data queries |
 
 **Access methods (StartOS 0.4.0):**
 
@@ -107,6 +105,8 @@
 - `<hostname>.local` with unique port
 - Tor `.onion` address
 - Custom domains (if configured)
+
+SSL termination for both interfaces is handled by the StartOS platform (nginx). The electrs binary receives plain TCP/HTTP internally.
 
 ---
 
@@ -127,8 +127,7 @@
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Log Level | INFO | Verbosity: ERROR, WARN, INFO, DEBUG, TRACE |
-| Index Batch Size | 10 | Max blocks to request from Bitcoin Core per batch (1-10000) |
-| Index Lookup Limit | 0 | Max transactions to lookup before timeout (0 = unlimited) |
+| Electrum Transaction Limit | 500 | Max transactions to lookup before returning an error (0 = unlimited) |
 
 ---
 
@@ -138,15 +137,14 @@
 
 | Property | Value |
 |----------|-------|
-| Version constraint | `>= 28.3` |
+| Version constraint | `>= 28.3:5` |
 | Required state | Running |
 | Health checks | `bitcoind` |
 | Mounted volume | `main` → `/mnt/bitcoind` (read-only) |
-| Purpose | Blockchain data via RPC and P2P, cookie authentication |
+| Purpose | Blockchain data via RPC, cookie authentication |
 
 The service automatically:
 - Connects to Bitcoin Core RPC at `bitcoind.startos:8332`
-- Connects to Bitcoin Core P2P at `bitcoind.startos:8333`
 - Uses cookie authentication from the mounted dependency volume
 - Restarts if the Bitcoin Core cookie file changes
 
@@ -163,7 +161,7 @@ The service automatically:
 
 **Included in backup:**
 
-- `main` volume configuration files (`electrs.toml`)
+- `main` volume (excluding `db/`) — preserves `config.json`
 
 **Excluded from backup:**
 
@@ -179,14 +177,14 @@ The service automatically:
 
 ## Health Checks
 
-| Check | Display | Method | Messages |
-|-------|---------|--------|----------|
-| Electrum Server | Electrum Server | Port 50001 listening | Ready: "Electrum server is ready and accepting connections" / Error: "Electrum server is unreachable" |
-| Sync Progress | Sync Progress | Prometheus metrics (`localhost:4224`) + Bitcoin RPC | See below |
+| Check | ID | Display | Method | Messages |
+|-------|----|---------|--------|----------|
+| Daemon ready | `electrs` | Electrum Server | Port 50001 listening | Ready: "Electrum server is ready and accepting connections" / Error: "Electrum server is unreachable" |
+| Sync progress | `sync` | Sync Progress | Bitcoin RPC + Prometheus metrics (`localhost:4224`) | See below |
 
 **Sync Progress details:**
 
-The sync check performs multiple steps: verifies the Bitcoin cookie file, checks Bitcoin sync status via RPC, scrapes Electrs Prometheus metrics for `index_height`, and detects database compaction. Messages include:
+The sync check runs only after the `electrs` daemon is ready. It performs multiple steps: verifies the Bitcoin cookie file, checks Bitcoin sync status via RPC, scrapes Electrs Prometheus metrics for `index_height`, and detects active database compaction. Messages include:
 
 - "Bitcoin blockchain is not fully synced yet: X of Y blocks (Z%)"
 - "Catching up to blocks from bitcoind… Progress: X of Y blocks (Z%)"
@@ -197,7 +195,7 @@ The sync check performs multiple steps: verifies the Bitcoin cookie file, checks
 
 ## Limitations and Differences
 
-1. **Mainnet only** — network is fixed to `bitcoin`; testnet/signet not supported
+1. **Mainnet only** — network is fixed to `mainnet`; testnet/signet not supported
 2. **Fixed Bitcoin connection** — must use the StartOS Bitcoin Core dependency; cannot connect to external Bitcoin nodes
 3. **Custom-built image** — built from source rather than using pre-built binaries
 4. **Index excluded from backups** — restoring from backup requires full re-indexing
@@ -208,6 +206,7 @@ The sync check performs multiple steps: verifies the Bitcoin cookie file, checks
 ## What Is Unchanged from Upstream
 
 - Full Electrum protocol v1.4 support
+- Full HTTP REST API (same as mempool.space backend)
 - RocksDB index storage
 - Fast synchronization performance
 - Low CPU/memory usage after initial sync
@@ -226,31 +225,33 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and development wo
 ## Quick Reference for AI Consumers
 
 ```yaml
-package_id: electrs
+package_id: mempool-electrs
 image: dockerBuild (custom)
 architectures: [x86_64, aarch64]
 volumes:
   main: /data
 ports:
-  electrum: 50001
+  electrum_internal: 50001
   electrum_ssl: 50002
+  rest_internal: 3000
+  rest_ssl: 443
 dependencies:
-  - bitcoind (required)
+  - bitcoind (required, >=28.3:5)
 fixed_config:
   cookie_file: /mnt/bitcoind/.cookie
   daemon_rpc_addr: bitcoind.startos:8332
-  daemon_p2p_addr: bitcoind.startos:8333
-  network: bitcoin
+  network: mainnet
   electrum_rpc_addr: 0.0.0.0:50001
+  http_addr: 0.0.0.0:3000
+  db_dir: /data/db
 startos_managed_config:
-  - log_filters
-  - index_batch_size
-  - index_lookup_limit
+  - log_level
+  - electrum_txs_limit
 actions:
   - config (enabled, any)
 health_checks:
-  - port_listening: 50001
-  - sync_progress: custom script
+  - electrs: port_listening 50001
+  - sync: bitcoin_rpc + prometheus localhost:4224
 backup_volumes:
   - main (excludes /db)
 ```
