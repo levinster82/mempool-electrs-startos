@@ -63,11 +63,13 @@
 |------|----------|---------|
 | Bitcoin connection | Manual configuration (RPC address, cookie path) | Auto-configured via dependency |
 | Configuration | CLI arguments or config file | Configure action in StartOS UI |
-| Initial sync | Several hours for full blockchain | Same (depends on hardware) |
+| Initial indexing | Several hours for full blockchain | Same (depends on hardware) |
 
 **Key difference:** On StartOS, the Bitcoin Core connection is fully automatic — Electrs connects to `bitcoind.startos:8332` for RPC using cookie authentication from the mounted dependency volume.
 
 **First run:** On install, `config.json` is seeded with defaults. Initial indexing takes several hours depending on your hardware. The service will show "loading" status until sync completes.
+
+> **Storage requirement:** As of April 2026, initial indexing and database compaction require **over 4 TB of free disk space**. Ensure your device has sufficient storage before installing.
 
 ---
 
@@ -224,7 +226,7 @@ The sync check runs only after the `electrs` daemon is ready. It performs multip
 - Full HTTP REST API (same as mempool.space backend)
 - RocksDB index storage
 - Fast synchronization performance
-- Low CPU/memory usage after initial sync
+- Low CPU/memory usage after initial indexing
 - Efficient mempool tracking
 - All standard Electrum wallet compatibility
 - Query functionality (balance, history, transactions)
